@@ -150,6 +150,12 @@ class Dbc {
   /// [IndexMap]
   static const OP_INDEX_MAP = 47;
 
+  /// [SetGlobal]
+  static const OP_SET_GLOBAL = 48;
+
+  /// [LoadGlobal]
+  static const OP_LOAD_GLOBAL = 49;
+
   static List<int> i16b(int i16) {
     final x = ByteData(2);
     x.setInt16(0, i16);
@@ -180,7 +186,7 @@ class Dbc {
 }
 
 abstract class DbcOp {
-  void run(Runtime exec);
+  void run(Runtime runtime);
 }
 
 typedef OpLoader = DbcOp Function(Runtime);
@@ -233,5 +239,7 @@ final List<OpLoader> ops = [
   (Runtime rt) => Await(rt), // 44
   (Runtime rt) => PushMap(rt), // 45
   (Runtime rt) => MapSet(rt), // 46
-  (Runtime rt) => IndexMap(rt) // 47
+  (Runtime rt) => IndexMap(rt), // 47
+  (Runtime rt) => SetGlobal(rt), // 48
+  (Runtime rt) => LoadGlobal(rt) // 49
 ];

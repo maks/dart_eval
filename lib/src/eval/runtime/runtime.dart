@@ -185,6 +185,8 @@ class Runtime {
   final _unloadedBrClass = <_UnloadedBridgeClass>[];
   final _unloadedBrFunc = <_UnloadedBridgeFunction>[];
   final constantPool = <Object>[];
+  final globals = <Object?>[];
+  final globalInitializers = <int>[];
 
   static List<int> opcodeFrom(DbcOp op) {
     switch (op.runtimeType) {
@@ -410,6 +412,12 @@ class Runtime {
       case IndexMap:
         op as IndexMap;
         return [Dbc.OP_INDEX_MAP, ...Dbc.i16b(op._map), ...Dbc.i16b(op._index)];
+      case SetGlobal:
+        op as SetGlobal;
+        return [Dbc.OP_SET_GLOBAL, ...Dbc.i32b(op._index), ...Dbc.i16b(op._value)];
+      case LoadGlobal:
+        op as LoadGlobal;
+        return [Dbc.OP_LOAD_GLOBAL, ...Dbc.i32b(op._index)];
       default:
         throw ArgumentError('Not a valid op $op');
     }

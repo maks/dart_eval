@@ -2,7 +2,7 @@ part of '../runtime.dart';
 
 /// Static call opcode that jumps to another location in the program and adds the prior location to the call stack.
 class Call implements DbcOp {
-  Call(Runtime exec) : _offset = exec._readInt32();
+  Call(Runtime runtime) : _offset = runtime._readInt32();
 
   Call.make(this._offset);
 
@@ -11,9 +11,9 @@ class Call implements DbcOp {
   static final int LEN = Dbc.BASE_OPLEN + Dbc.I32_LEN;
 
   @override
-  void run(Runtime exec) {
-    exec.callStack.add(exec._prOffset);
-    exec._prOffset = _offset;
+  void run(Runtime runtime) {
+    runtime.callStack.add(runtime._prOffset);
+    runtime._prOffset = _offset;
   }
 
   @override
@@ -22,10 +22,10 @@ class Call implements DbcOp {
 
 /// Push a new frame onto the stack, populated with any current args
 class PushScope implements DbcOp {
-  PushScope(Runtime exec)
-      : sourceFile = exec._readInt32(),
-        sourceOffset = exec._readInt32(),
-        frName = exec._readString();
+  PushScope(Runtime runtime)
+      : sourceFile = runtime._readInt32(),
+        sourceOffset = runtime._readInt32(),
+        frName = runtime._readString();
 
   PushScope.make(this.sourceFile, this.sourceOffset, this.frName);
 
@@ -38,17 +38,17 @@ class PushScope implements DbcOp {
   }
 
   @override
-  void run(Runtime exec) {
+  void run(Runtime runtime) {
     final frame = List<Object?>.filled(255, null);
-    exec.stack.add(frame);
-    exec.frame = frame;
-    exec.frameOffsetStack.add(exec.frameOffset);
-    exec.frameOffset = exec.args.length;
-    final args = exec.args;
+    runtime.stack.add(frame);
+    runtime.frame = frame;
+    runtime.frameOffsetStack.add(runtime.frameOffset);
+    runtime.frameOffset = runtime.args.length;
+    final args = runtime.args;
     for (var i = 0; i < args.length; i++) {
       frame[i] = args[i];
     }
-    exec.args = [];
+    runtime.args = [];
   }
 
   @override
@@ -58,15 +58,15 @@ class PushScope implements DbcOp {
 /// Capture a reference to the previous stack frame (as a List) into the specified register of the current stack frame.
 /// Typically used to implement closures
 class PushCaptureScope implements DbcOp {
-  PushCaptureScope(Runtime exec);
+  PushCaptureScope(Runtime runtime);
 
   PushCaptureScope.make();
 
   static int LEN = Dbc.BASE_OPLEN;
 
   @override
-  void run(Runtime exec) {
-    exec.frame[exec.frameOffset++] = exec.stack[exec.stack.length - 2];
+  void run(Runtime runtime) {
+    runtime.frame[runtime.frameOffset++] = runtime.stack[runtime.stack.length - 2];
   }
 
   @override
@@ -96,9 +96,9 @@ class PopScope implements DbcOp {
 
 /// Jump to constant program offset if [_location] is not null
 class JumpIfNonNull implements DbcOp {
-  JumpIfNonNull(Runtime exec)
-      : _location = exec._readInt16(),
-        _offset = exec._readInt32();
+  JumpIfNonNull(Runtime runtime)
+      : _location = runtime._readInt16(),
+        _offset = runtime._readInt32();
 
   JumpIfNonNull.make(this._location, this._offset);
 
@@ -109,9 +109,9 @@ class JumpIfNonNull implements DbcOp {
 
   // Conditional move
   @override
-  void run(Runtime exec) {
-    if (exec.frame[_location] != null) {
-      exec._prOffset = _offset;
+  void run(Runtime runtime) {
+    if (runtime.frame[_location] != null) {
+      runtime._prOffset = _offset;
     }
   }
 
@@ -121,9 +121,9 @@ class JumpIfNonNull implements DbcOp {
 
 /// Jump to constant program offset if [_location] is false
 class JumpIfFalse implements DbcOp {
-  JumpIfFalse(Runtime exec)
-      : _location = exec._readInt16(),
-        _offset = exec._readInt32();
+  JumpIfFalse(Runtime runtime)
+      : _location = runtime._readInt16(),
+        _offset = runtime._readInt32();
 
   JumpIfFalse.make(this._location, this._offset);
 
@@ -134,9 +134,9 @@ class JumpIfFalse implements DbcOp {
 
   // Conditional move
   @override
-  void run(Runtime exec) {
-    if (exec.frame[_location] == false) {
-      exec._prOffset = _offset;
+  void run(Runtime runtime) {
+    if (runtime.frame[_location] == false) {
+      runtime._prOffset = _offset;
     }
   }
 
@@ -155,8 +155,8 @@ class Exit implements DbcOp {
   static const int LEN = Dbc.BASE_OPLEN + Dbc.I16_LEN;
 
   @override
-  void run(Runtime exec) {
-    throw ProgramExit(exec.frame[_location] as int);
+  void run(Runtime runtime) {
+    throw ProgramExit(runtime.frame[_location] as int);
   }
 
   @override
@@ -168,7 +168,7 @@ class Exit implements DbcOp {
 /// 2. Pops the current frame off the stack, just like [PopScope]
 /// 3. Pops the last offset from the call stack and jumps to it, unless it is -1 in which case [Exit] is mimicked
 class Return implements DbcOp {
-  Return(Runtime exec) : _location = exec._readInt16();
+  Return(Runtime runtime) : _location = runtime._readInt16();
 
   Return.make(this._location);
 
@@ -203,7 +203,7 @@ class Return implements DbcOp {
 
 // Jump to constant program offset
 class JumpConstant implements DbcOp {
-  JumpConstant(Runtime exec) : _offset = exec._readInt32();
+  JumpConstant(Runtime runtime) : _offset = runtime._readInt32();
 
   JumpConstant.make(this._offset);
 
@@ -212,8 +212,8 @@ class JumpConstant implements DbcOp {
   final int _offset;
 
   @override
-  void run(Runtime exec) {
-    exec._prOffset = _offset;
+  void run(Runtime runtime) {
+    runtime._prOffset = _offset;
   }
 
   @override
@@ -221,7 +221,7 @@ class JumpConstant implements DbcOp {
 }
 
 class PushFunctionPtr implements DbcOp {
-  PushFunctionPtr(Runtime exec) : _offset = exec._readInt32();
+  PushFunctionPtr(Runtime runtime) : _offset = runtime._readInt32();
 
   PushFunctionPtr.make(this._offset);
 

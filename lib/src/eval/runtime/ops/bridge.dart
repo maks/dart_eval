@@ -137,7 +137,7 @@ class Await implements DbcOp {
     final future = runtime.frame[_futureOffset] as $Future;
     _suspend(runtime, continuation, future);
 
-    // Return with the completer as the result (the following lines are a copy of the Return op code)
+    // Return with the completer future as the result (the following lines are a copy of the Return op code)
     runtime.returnValue =
         $Future.wrap(completer.future, (value) => value as $Value?);
     runtime.stack.removeLast();

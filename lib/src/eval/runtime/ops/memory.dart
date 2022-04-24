@@ -20,7 +20,7 @@ class PushArg implements DbcOp {
 }
 
 class Pop implements DbcOp {
-  Pop(Runtime exec) : _amount = exec._readUint8();
+  Pop(Runtime runtime) : _amount = runtime._readUint8();
 
   Pop.make(this._amount);
 
@@ -29,8 +29,8 @@ class Pop implements DbcOp {
   static const int LEN = Dbc.BASE_OPLEN;
 
   @override
-  void run(Runtime exec) {
-    exec.frameOffset -= _amount;
+  void run(Runtime runtime) {
+    runtime.frameOffset -= _amount;
   }
 
   @override
@@ -38,15 +38,15 @@ class Pop implements DbcOp {
 }
 
 class PushReturnValue implements DbcOp {
-  PushReturnValue(Runtime exec);
+  PushReturnValue(Runtime runtime);
 
   PushReturnValue.make();
 
   static const int LEN = Dbc.BASE_OPLEN;
 
   @override
-  void run(Runtime exec) {
-    exec.frame[exec.frameOffset++] = exec.returnValue;
+  void run(Runtime runtime) {
+    runtime.frame[runtime.frameOffset++] = runtime.returnValue;
   }
 
   @override
@@ -54,7 +54,7 @@ class PushReturnValue implements DbcOp {
 }
 
 class SetReturnValue implements DbcOp {
-  SetReturnValue(Runtime exec) : _location = exec._readInt16();
+  SetReturnValue(Runtime runtime) : _location = runtime._readInt16();
 
   SetReturnValue.make(this._location);
 
@@ -63,8 +63,8 @@ class SetReturnValue implements DbcOp {
   static const int LEN = Dbc.BASE_OPLEN + Dbc.I16_LEN;
 
   @override
-  void run(Runtime exec) {
-    exec.returnValue = exec.frame[_location] as int;
+  void run(Runtime runtime) {
+    runtime.returnValue = runtime.frame[_location] as int;
   }
 
   @override
@@ -72,9 +72,9 @@ class SetReturnValue implements DbcOp {
 }
 
 class CopyValue implements DbcOp {
-  CopyValue(Runtime exec)
-      : _to = exec._readInt16(),
-        _from = exec._readInt16();
+  CopyValue(Runtime runtime)
+      : _to = runtime._readInt16(),
+        _from = runtime._readInt16();
 
   CopyValue.make(this._to, this._from);
 
@@ -85,10 +85,42 @@ class CopyValue implements DbcOp {
 
   // Conditional move
   @override
-  void run(Runtime exec) {
-    exec.frame[_to] = exec.frame[_from];
+  void run(Runtime runtime) {
+    runtime.frame[_to] = runtime.frame[_from];
   }
 
   @override
   String toString() => 'CopyValue (L$_to <-- L$_from)';
+}
+
+class SetGlobal implements DbcOp {
+  SetGlobal(Runtime runtime): _index = runtime._readInt32(), _value = runtime._readInt16();
+
+  final int _index;
+  final int _value;
+
+  SetGlobal.make(this._index, this._value);
+
+  @override
+  void run(Runtime runtime) {
+    runtime.globals[_index] = runtime.frame[_value];
+  }
+}
+
+class LoadGlobal implements DbcOp {
+  LoadGlobal(Runtime runtime): _index = runtime._readInt32();
+
+  final int _index;
+
+  LoadGlobal.make(this._index);
+
+  @override
+  void run(Runtime runtime) {
+    var value = runtime.globals[_index];
+    if (value == null) {
+      runtime.callStack.add(runtime._prOffset);
+      runtime._prOffset = runtime.globalInitializers[_index];
+    }
+    runtime.returnValue = value;
+  }
 }
